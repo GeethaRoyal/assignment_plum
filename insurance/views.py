@@ -44,6 +44,7 @@ class MembersList(APIView):
         create_objs, rejected_objs = [], []
         counter = 1
         for obj in data:
+            reason = {"row_no": counter, "reason": []}
             if obj['employee_id'] not in ids:
                 if obj['gender'] in ["Male", "Female", "Others"]:
                     if datetime.strptime(obj['dob'], "%d/%m/%Y"):
@@ -51,23 +52,24 @@ class MembersList(APIView):
                         obj['dob'] = obj['dob'].strftime('%Y-%m-%d')
                         if len(obj['email'].strip()):
                             if not re.fullmatch(regex, obj['email']):
-                                rejected_objs.append({"row_no": counter, "reason": "email is invalid"})
+                                reason['reason'].append("email is invalid")
                             if bool(re.fullmatch(names_regex, obj['first_name'].strip())):
                                 if bool(re.fullmatch(names_regex, obj['last_name'].strip())):
                                     create_objs.append(Members(org_id=org_id, employee_id=obj['employee_id'], first_name=obj['first_name'], middle_name=obj['middle_name'], last_name=obj['last_name'], email_id=obj['email'], date_of_birth=obj['dob'], gender=obj['gender']))
                                 else:
-                                    rejected_objs.append({"row_no": counter, "reason": "last name is invalid"})
+                                    reason['reason'].append("last name is invalid")
                             else:
-                                rejected_objs.append({"row_no": counter, "reason": "first name is invalid"})
+                                reason['reason'].append("first name is invalid")
                     else:
-                        rejected_objs.append({"row_no": counter, "reason": "date of birth is invalid"})
+                        reason['reason'].appennd("date of birth is invalid")
                 else:
-                    rejected_objs.append({"row_no": counter, "reason": "invalid gender value"})
+                    reason['reason'].append("invalid gender value")
             else:
-                if len(obj['employee_id']):
-                    rejected_objs.append({"row_no": counter, "reason": "employee_id already exists"})
+                if obj['employee_id']:
+                    reason['reason'].append("employee_id already exists")
                 else:
-                    rejected_objs.append({"row_no": counter, "reason": "employee_id is empty"})
+                    reason['reason'].append("employee_id is empty")
             counter += 1
+            rejected_objs.append(reason)
         Members.objects.bulk_create(create_objs)
         return Response(rejected_objs)
